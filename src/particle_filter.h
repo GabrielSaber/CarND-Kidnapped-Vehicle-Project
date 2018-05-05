@@ -11,6 +11,8 @@
 
 #include "helper_functions.h"
 
+using namespace std;
+
 struct Particle {
 
 	int id;
@@ -26,6 +28,8 @@ struct Particle {
 
 
 class ParticleFilter {
+
+private:
 	
 	// Number of particles to draw
 	int num_particles; 
@@ -38,6 +42,15 @@ class ParticleFilter {
 	// Vector of weights of all particles
 	std::vector<double> weights;
 	
+	double m_std_x;
+	double m_std_y;
+	double m_std_theta;
+
+
+	double calculateWeight(LandmarkObs observation, const Map &map_landmarks);
+	vector<LandmarkObs> map(Particle particle, const std::vector<LandmarkObs> observations);
+	void normalizeParticlesWeights(void);
+
 public:
 	
 	// Set of current particles
