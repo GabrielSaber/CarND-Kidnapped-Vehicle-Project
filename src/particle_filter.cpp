@@ -187,6 +187,16 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 		vector<LandmarkObs> mappedObservations = map(particles[p], observations);
 		dataAssociation(predictedLandmarks, mappedObservations);
 
+		particles[p].associations.resize(mappedObservations.size());
+		particles[p].sense_x.resize(mappedObservations.size());
+		particles[p].sense_y.resize(mappedObservations.size());
+
+		for(int i= 0; i < mappedObservations.size(); i++){
+			particles[p].associations[i] = mappedObservations[i].id;
+			particles[p].sense_x[i] = mappedObservations[i].x;
+			particles[p].sense_y[i] = mappedObservations[i].y;
+		}
+
 		double weight = 1.0;
 
 		for(int i =0; i < mappedObservations.size(); i++){
