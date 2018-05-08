@@ -67,6 +67,8 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 		cout << "p " << i  << " " << particles[i].x << " " << particles[i].y << " " << particles[i].theta << " " << particles[i].weight << endl;
 	}
 
+	weights.resize(num_particles);
+
 	is_initialized = true;
 
 }
@@ -111,7 +113,7 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
  * @param predicted Vector of predicted landmark observations
  * @param observations Vector of landmark observations
  */
-void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::vector<LandmarkObs>& observations) {
+void ParticleFilter::dataAssociation(std::vector<LandmarkObs> inRangeLandmarks, std::vector<LandmarkObs>& observations) {
 	// TODO: Find the predicted measurement that is closest to each observed measurement and assign the 
 	//   observed measurement to this particular landmark.
 	// NOTE: this method will NOT be called by the grading code. But you will probably find it useful to 
@@ -122,22 +124,22 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
 		// Initialize with big number.
 		double minDistance = 1.0e99;
 
-		int mapId = -1;
+		int nearestNeighborId = -1;
 
-		for (int j = 0; j < predicted.size(); j++) {
+		for (int j = 0; j < inRangeLandmarks.size(); j++) {
 
-			double xDistance = observations[i].x - predicted[j].x;
-			double yDistance = observations[i].y - predicted[j].y;
+			double xDistance = observations[i].x - inRangeLandmarks[j].x;
+			double yDistance = observations[i].y - inRangeLandmarks[j].y;
 
 			double distance = xDistance * xDistance + yDistance * yDistance;
 
 			if (distance < minDistance) {
 				minDistance = distance;
-				mapId = predicted[j].id;
+				nearestNeighborId = inRangeLandmarks[j].id;
 			}
 		}
 
-		observations[i].id = mapId;
+		observations[i].id = nearestNeighborId;
 	}
 
 }
@@ -168,24 +170,24 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 	for (int p = 0; p < num_particles; p++){
 
 		// find predicted landmarks
-		vector<LandmarkObs> predictedLandmarks;
+		vector<LandmarkObs> inRangeLandmarks;
 		for(int lm = 0; lm < map_landmarks.landmark_list.size(); lm++) {
 
-			LandmarkObs predictedLandmark;
-			predictedLandmark.id 	= map_landmarks.landmark_list[lm].id_i;
-			predictedLandmark.x		= map_landmarks.landmark_list[lm].x_f;
-			predictedLandmark.y 	= map_landmarks.landmark_list[lm].y_f;
+			LandmarkObs inRangeLandmark;
+			inRangeLandmark.id 	= map_landmarks.landmark_list[lm].id_i;
+			inRangeLandmark.x	= map_landmarks.landmark_list[lm].x_f;
+			inRangeLandmark.y 	= map_landmarks.landmark_list[lm].y_f;
 
-			double dx = predictedLandmark.x - particles[p].x;
-			double dy = predictedLandmark.y - particles[p].y;
+			double dx = inRangeLandmark.x - particles[p].x;
+			double dy = inRangeLandmark.y - particles[p].y;
 
 			if ( dx*dx + dy*dy <= sensor_range*sensor_range) {
-				predictedLandmarks.push_back(predictedLandmark);
+				inRangeLandmarks.push_back(inRangeLandmark);
 			}
 		}
 
 		vector<LandmarkObs> mappedObservations = map(particles[p], observations);
-		dataAssociation(predictedLandmarks, mappedObservations);
+		dataAssociation(inRangeLandmarks, mappedObservations);
 
 		particles[p].associations.resize(mappedObservations.size());
 		particles[p].sense_x.resize(mappedObservations.size());
@@ -204,9 +206,12 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 		}
 
 		particles[p].weight = weight;
+		weights[p] = weight;
+
+		cout << "weight [" << p <<  "]" <<  "= " << weight<<endl;
 	}
 
-	normalizeParticlesWeights();
+	//normalizeParticlesWeights();
 
 
 }
@@ -214,31 +219,44 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 double ParticleFilter::calculateWeight(LandmarkObs observation, const Map &map_landmarks){
 
 	double weight = 0;
+	double sig_x= m_std_x;
+	double sig_y= m_std_y;
+	double x_obs= observation.x;
+	double y_obs= observation.y;
+	double mu_x = 0;
+	double mu_y = 0;
 
-	if(observation.id < map_landmarks.landmark_list.size()){
+	if(observation.id >= 0){
 
-		double sig_x= m_std_x;
-		double sig_y= m_std_y;
-		double x_obs= observation.x;
-		double y_obs= observation.y;
-		double mu_x= map_landmarks.landmark_list[observation.id].x_f;
-		double mu_y= map_landmarks.landmark_list[observation.id].y_f;
+		bool lm_found = false;
 
-		// calculate normalization term
-		double gauss_norm= (1.0/(2.0 * M_PI * sig_x * sig_y));
+		for(int lm = 0; lm < map_landmarks.landmark_list.size(); lm++){
 
-		// calculate exponent
-		double exponent= ((x_obs - mu_x)*(x_obs - mu_x))/(2 * sig_x*sig_x) + ((y_obs - mu_y)*(y_obs - mu_y))/(2 * sig_y*sig_y);
+			if (map_landmarks.landmark_list[lm].id_i == observation.id){
 
-		// calculate weight using normalization terms and exponent
-		weight = gauss_norm * exp(-exponent);
-	}
+				mu_x = map_landmarks.landmark_list[lm].x_f;
+				mu_y = map_landmarks.landmark_list[lm].y_f;
 
-	if(weight == 0){
-		weight = .00001;
-	}
-	else{
-		cout << "weight calculated\n";
+				lm_found = true;
+
+				break;
+			}
+		}
+
+		if(lm_found){
+
+			// calculate normalization term
+			double gauss_norm= (1.0/(2.0 * M_PI * sig_x * sig_y));
+
+			// calculate exponent
+			double exponent= ((x_obs - mu_x)*(x_obs - mu_x))/(2 * sig_x*sig_x) + ((y_obs - mu_y)*(y_obs - mu_y))/(2 * sig_y*sig_y);
+
+			// calculate weight using normalization terms and exponent
+			weight = gauss_norm * exp(-exponent);
+
+		}
+
+
 	}
 
 	return weight;
@@ -299,7 +317,7 @@ void ParticleFilter::resample() {
 	for (int i = 0; i < num_particles; i++) {
 		new_particles[i] = particles[dist_particles(gen)];
 	}
-	particles = new_particles;
+	//particles = new_particles;
 
 }
 
