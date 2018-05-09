@@ -47,7 +47,7 @@ private:
 	double m_std_theta;
 
 
-	double calculateWeight(LandmarkObs observation, const Map &map_landmarks);
+	double calculateWeight(LandmarkObs observation, double std_landmark[], const Map &map_landmarks);
 	vector<LandmarkObs> map(Particle particle, const std::vector<LandmarkObs> observations);
 	void normalizeParticlesWeights(void);
 

@@ -202,7 +202,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 		double weight = 1.0;
 
 		for(int i = 0; i < mappedObservations.size(); i++){
-			weight *= calculateWeight(mappedObservations[i], map_landmarks);
+			weight *= calculateWeight(mappedObservations[i], std_landmark, map_landmarks);
 		}
 
 		particles[p].weight = weight;
@@ -216,11 +216,11 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 
 }
 
-double ParticleFilter::calculateWeight(LandmarkObs observation, const Map &map_landmarks){
+double ParticleFilter::calculateWeight(LandmarkObs observation, double std_landmark[], const Map &map_landmarks){
 
 	double weight = 0;
-	double sig_x= m_std_x;
-	double sig_y= m_std_y;
+	double sig_x= std_landmark[0];
+	double sig_y= std_landmark[1];
 	double x_obs= observation.x;
 	double y_obs= observation.y;
 	double mu_x = 0;
