@@ -201,7 +201,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 
 		double weight = 1.0;
 
-		for(int i =0; i < mappedObservations.size(); i++){
+		for(int i = 0; i < mappedObservations.size(); i++){
 			weight *= calculateWeight(mappedObservations[i], map_landmarks);
 		}
 
@@ -211,7 +211,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 		cout << "weight [" << p <<  "]" <<  "= " << weight<<endl;
 	}
 
-	//normalizeParticlesWeights();
+	normalizeParticlesWeights();
 
 
 }
@@ -295,9 +295,12 @@ void ParticleFilter::normalizeParticlesWeights(void){
 		weightSum = particles[i].weight;
 	}
 
-	for (int i = 0; i < particles.size(); i++){
-		particles[i].weight /=  weightSum;
+	if (weightSum > 0){
+		for (int i = 0; i < particles.size(); i++){
+			particles[i].weight /=  weightSum;
+		}
 	}
+
 }
 
 /**
@@ -317,7 +320,7 @@ void ParticleFilter::resample() {
 	for (int i = 0; i < num_particles; i++) {
 		new_particles[i] = particles[dist_particles(gen)];
 	}
-	//particles = new_particles;
+	particles = new_particles;
 
 }
 
