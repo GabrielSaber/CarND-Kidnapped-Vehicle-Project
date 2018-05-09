@@ -41,10 +41,6 @@ private:
 	
 	// Vector of weights of all particles
 	std::vector<double> weights;
-	
-	double m_std_x;
-	double m_std_y;
-	double m_std_theta;
 
 
 	double calculateWeight(LandmarkObs observation, double std_landmark[], const Map &map_landmarks);
