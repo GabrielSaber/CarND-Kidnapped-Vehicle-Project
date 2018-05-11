@@ -36,7 +36,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 
 	cout << "init" << endl;
 
-	num_particles = 10;
+	num_particles = 100;
 
 	default_random_engine gen;
 
@@ -87,9 +87,10 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 	for (int i = 0; i < num_particles; i++){
 		Particle& p = particles[i];
 		//avoid division by zero
-		if (fabs(yaw_rate) > 0.001) {
+		if (fabs(yaw_rate) > 0.00001) {
 			p.x = p.x + velocity/yaw_rate * ( sin (p.theta + yaw_rate*delta_t) - sin(p.theta));
 			p.y = p.y + velocity/yaw_rate * ( cos(p.theta) - cos(p.theta + yaw_rate*delta_t) );
+			p.theta = p.theta + yaw_rate*delta_t;
 		}
 		else {
 			p.x = p.x + velocity * delta_t * cos(p.theta);
@@ -287,12 +288,13 @@ void ParticleFilter::normalizeParticlesWeights(void){
 	double weightSum = 0;
 
 	for (int i = 0; i < particles.size(); i++){
-		weightSum = particles[i].weight;
+		weightSum += particles[i].weight;
 	}
 
 	if (weightSum > 0){
 		for (int i = 0; i < particles.size(); i++){
 			particles[i].weight /=  weightSum;
+			weights[i] = particles[i].weight;
 		}
 	}
 
@@ -308,7 +310,6 @@ void ParticleFilter::resample() {
 	//   http://en.cppreference.com/w/cpp/numeric/random/discrete_distribution
 
 	static default_random_engine gen;
-	gen.seed(123);
 	discrete_distribution<> dist_particles(weights.begin(), weights.end());
 	vector<Particle> new_particles;
 	new_particles.resize(num_particles);
