@@ -36,7 +36,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 
 	cout << "init" << endl;
 
-	num_particles = 100;
+	num_particles = 50;
 
 	default_random_engine gen;
 
@@ -84,6 +84,13 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 
 	cout << "prediction" << endl;
 
+
+	static default_random_engine gen;
+	// create a normal (Gaussian) distribution
+	normal_distribution<double> dist_x(0.0, std_pos[0]);
+	normal_distribution<double> dist_y(0.0, std_pos[1]);
+	normal_distribution<double> dist_theta(0.0, std_pos[2]);
+
 	for (int i = 0; i < num_particles; i++){
 		Particle& p = particles[i];
 		//avoid division by zero
@@ -97,9 +104,22 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 			p.y = p.y + velocity * delta_t * sin(p.theta);
 		}
 
+		// add random noise
+		p.x += dist_x(gen);
+		p.y += dist_y(gen);
+		p.theta += dist_theta(gen);
+
 		// Print your samples to the terminal.
 		cout << "p " << i  << " " << particles[i].x << " " << particles[i].y << " " << particles[i].theta << " " << particles[i].weight << endl;
 	}
+
+
+
+
+
+
+
+
 
 }
 
